@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(python:*)",
+      "Bash(start.bat)",
+      "Bash(venvScriptspip install -r requirements.txt)",
+      "Bash(./venv/Scripts/pip install:*)",
+      "Bash(./venv/Scripts/python:*)",
+      "Bash(timeout:*)",
+      "Bash(npm start)",
+      "Bash(cat:*)",
+      "Bash(./venv/Scripts/pip uninstall:*)",
+      "Bash(choco:*)",
+      "Bash(winget:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(curl:*)",
+      "Bash(dir:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(venvScriptspip list:*)",
+      "Bash(./venv/Scripts/pip:*)",
+      "Bash(del:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(start:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(set HF_ENDPOINT=https://hf-mirror.com)",
+      "Bash(export:*)",
+      "Bash(whisper_envScriptspython.exe:*)",
+      "Bash(./whisper_env/Scripts/python.exe:*)",
+      "Bash(ffprobe:*)",
+      "Bash(pip install:*)",
+      "Bash(call venvScriptsactivate)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(node:*)",
+      "Bash(venvScriptspython.exe:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
