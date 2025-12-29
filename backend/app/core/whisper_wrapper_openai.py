@@ -119,8 +119,16 @@ class WhisperWrapper:
             if progress_callback:
                 await progress_callback(90, "Transcription complete, saving...")
 
-            # Extract text
-            transcription = result["text"].strip()
+            # Extract and format text with smart segmentation
+            from .text_formatter import format_segments_with_pauses, format_text_simple
+
+            segments = result.get("segments", [])
+            if segments:
+                # Use smart formatting with pause detection
+                transcription = format_segments_with_pauses(segments)
+            else:
+                # Fallback to simple formatting
+                transcription = format_text_simple(result["text"])
 
             # Save transcript
             Path(output_path).write_text(transcription, encoding='utf-8')

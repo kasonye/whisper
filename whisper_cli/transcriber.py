@@ -80,13 +80,18 @@ class WhisperTranscriber:
                 task="transcribe"  # Transcribe (not translate)
             )
 
-            # Collect all segments into a single text
-            transcription = ""
+            # Collect segments with timing information
+            segment_list = []
             for segment in segments:
-                transcription += segment.text
+                segment_list.append({
+                    "text": segment.text,
+                    "start": segment.start,
+                    "end": segment.end
+                })
 
-            # Clean up the transcription
-            transcription = transcription.strip()
+            # Format with smart segmentation
+            from .text_formatter import format_segments_with_pauses
+            transcription = format_segments_with_pauses(segment_list)
 
             if self.verbose:
                 print(f"Detected language: {info.language} (probability: {info.language_probability:.2f})")
