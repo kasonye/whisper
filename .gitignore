@@ -147,3 +147,6 @@ models/
 
 # Temporary files
 nul
+
+# Storage directory (runtime generated files)
+backend/storage/
