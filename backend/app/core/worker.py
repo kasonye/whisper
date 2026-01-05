@@ -5,7 +5,7 @@ from pathlib import Path
 from .queue_manager import QueueManager
 from .ffmpeg_processor import FFmpegProcessor
 from .whisper_wrapper_openai import WhisperWrapper
-from .ollama_service import ollama_service
+from .llm_service import llm_service
 from ..models import JobStatus
 
 
@@ -165,13 +165,17 @@ class Worker:
             JobStatus.FORMATTING_LLM,
             70,
             "LLM Processing",
-            "Checking Ollama service..."
+            "Checking LLM service..."
         )
 
-        # Check if Ollama is available
-        status = await ollama_service.check_status()
-        if not status["available"]:
-            print(f"Ollama service not available: {status.get('error')}")
+        # Check if LLM service is available
+        status = await llm_service.check_status()
+        provider = status.get("provider", "ollama")
+        provider_status = status.get(provider, {})
+
+        if not provider_status or not provider_status.get("available", False):
+            error_msg = provider_status.get("error", "LLM service not available") if provider_status else "LLM service not configured"
+            print(f"LLM service not available: {error_msg}")
             job.transcript_path = raw_transcript_path
             job.llm_processing_skipped = True
             await self.queue_manager.update_job_progress(
@@ -179,7 +183,7 @@ class Worker:
                 JobStatus.FORMATTING_LLM,
                 95,
                 "LLM Processing",
-                "Ollama unavailable, using raw transcript"
+                f"LLM unavailable ({provider}), using raw transcript"
             )
             return
 
@@ -201,7 +205,7 @@ class Worker:
             "Detecting source language..."
         )
 
-        detected_lang = await ollama_service.detect_language(raw_text, job.llm_model)
+        detected_lang = await llm_service.detect_language(raw_text, job.llm_model)
         job.detected_language = detected_lang
         print(f"Detected language: {detected_lang}, Target language: {job.target_language}")
 
@@ -231,7 +235,7 @@ class Worker:
                 "LLM Processing",
                 "Source and target language match, formatting only..."
             )
-            processed_text = await ollama_service.format_transcript(
+            processed_text = await llm_service.format_transcript(
                 raw_text,
                 job.llm_model,
                 llm_progress
@@ -245,7 +249,7 @@ class Worker:
                 "LLM Processing",
                 f"Translating to {job.target_language}..."
             )
-            processed_text = await ollama_service.translate_and_format(
+            processed_text = await llm_service.translate_and_format(
                 raw_text,
                 job.target_language,
                 job.llm_model,

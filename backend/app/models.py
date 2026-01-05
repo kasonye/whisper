@@ -59,6 +59,12 @@ class ProgressUpdate(BaseModel):
     message: str
 
 
+class LLMProvider(str, Enum):
+    """LLM provider enumeration."""
+    OLLAMA = "ollama"
+    OPENROUTER = "openrouter"
+
+
 class OllamaConfig(BaseModel):
     """Ollama configuration model."""
     enabled: bool = True
@@ -69,6 +75,21 @@ class OllamaConfig(BaseModel):
     chunk_overlap: Optional[int] = 200
 
 
+class OpenRouterConfig(BaseModel):
+    """OpenRouter configuration model."""
+    api_key: str = ""
+    default_model: str = "openai/gpt-4o-mini"
+    timeout: int = 300
+
+
+class LLMConfig(BaseModel):
+    """Unified LLM configuration model."""
+    enabled: bool = True
+    provider: LLMProvider = LLMProvider.OLLAMA
+    ollama: OllamaConfig = OllamaConfig()
+    openrouter: OpenRouterConfig = OpenRouterConfig()
+
+
 class OllamaStatus(BaseModel):
     """Ollama status model."""
     available: bool
@@ -76,6 +97,21 @@ class OllamaStatus(BaseModel):
     enabled: bool
     models_count: int
     error: Optional[str] = None
+
+
+class OpenRouterStatus(BaseModel):
+    """OpenRouter status model."""
+    available: bool
+    enabled: bool
+    error: Optional[str] = None
+
+
+class LLMStatus(BaseModel):
+    """Unified LLM status model."""
+    enabled: bool
+    provider: LLMProvider
+    ollama: Optional[OllamaStatus] = None
+    openrouter: Optional[OpenRouterStatus] = None
 
 
 class SupportedLanguage(BaseModel):

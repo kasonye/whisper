@@ -12,8 +12,11 @@ from contextlib import asynccontextmanager
 
 from .core.queue_manager import QueueManager
 from .core.worker import Worker
-from .core.ollama_service import ollama_service
-from .models import Job, OllamaConfig, OllamaStatus, SupportedLanguage, SUPPORTED_LANGUAGES
+from .core.llm_service import llm_service
+from .models import (
+    Job, OllamaConfig, OllamaStatus, OpenRouterConfig, OpenRouterStatus,
+    LLMConfig, LLMStatus, LLMProvider, SupportedLanguage, SUPPORTED_LANGUAGES
+)
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -82,9 +85,14 @@ async def root():
             "download_raw": "GET /api/download/{job_id}/raw",
             "websocket": "WS /ws",
             "status": "GET /api/status",
-            "ollama_config": "GET/PUT /api/config/ollama",
+            "llm_config": "GET/PUT /api/config/llm",
+            "llm_status": "GET /api/llm/status",
+            "llm_models": "GET /api/llm/models",
+            "ollama_config": "GET/PUT /api/config/ollama (legacy)",
             "ollama_status": "GET /api/ollama/status",
             "ollama_models": "GET /api/ollama/models",
+            "openrouter_status": "GET /api/openrouter/status",
+            "openrouter_models": "GET /api/openrouter/models",
             "languages": "GET /api/languages"
         }
     }
@@ -211,38 +219,90 @@ async def download_raw_transcript(job_id: str):
     )
 
 
-# ============== Ollama API Endpoints ==============
+# ============== LLM API Endpoints ==============
+
+@app.get("/api/config/llm")
+async def get_llm_config():
+    """Get unified LLM configuration."""
+    return llm_service.get_config()
+
+
+@app.put("/api/config/llm")
+async def update_llm_config(config: LLMConfig):
+    """Update unified LLM configuration."""
+    updated_config = llm_service.update_config(config.model_dump())
+    return {"message": "Configuration updated", "config": updated_config}
+
+
+@app.get("/api/llm/status")
+async def get_llm_status():
+    """Get unified LLM status."""
+    status = await llm_service.check_status()
+    return status
+
+
+@app.get("/api/llm/models")
+async def get_llm_models(provider: Optional[str] = None):
+    """Get available models for the specified or current provider."""
+    models = await llm_service.list_models(provider)
+    return {"models": models}
+
+
+# ============== Ollama API Endpoints (Legacy) ==============
 
 @app.get("/api/config/ollama")
 async def get_ollama_config():
-    """Get Ollama configuration."""
-    return ollama_service.get_config()
+    """Get Ollama configuration (legacy, returns from unified config)."""
+    config = llm_service.get_config()
+    ollama_config = config.get("ollama", {})
+    ollama_config["enabled"] = config.get("enabled", True) and config.get("provider") == "ollama"
+    return ollama_config
 
 
 @app.put("/api/config/ollama")
 async def update_ollama_config(config: OllamaConfig):
-    """Update Ollama configuration."""
-    updated_config = ollama_service.update_config(config.model_dump())
-    return {"message": "Configuration updated", "config": updated_config}
+    """Update Ollama configuration (legacy)."""
+    current_config = llm_service.get_config()
+    current_config["ollama"] = config.model_dump()
+    if config.enabled:
+        current_config["provider"] = "ollama"
+    updated_config = llm_service.update_config(current_config)
+    return {"message": "Configuration updated", "config": updated_config.get("ollama", {})}
 
 
 @app.get("/api/ollama/status", response_model=OllamaStatus)
 async def get_ollama_status():
     """Get Ollama service status."""
-    status = await ollama_service.check_status()
+    status = await llm_service.check_ollama_status()
     return status
 
 
 @app.get("/api/ollama/models")
 async def get_ollama_models():
     """Get available Ollama models."""
-    status = await ollama_service.check_status()
+    status = await llm_service.check_ollama_status()
     if not status["available"]:
         raise HTTPException(
             status_code=503,
             detail=status.get("error", "Ollama service not available")
         )
-    models = await ollama_service.list_models()
+    models = await llm_service.list_models("ollama")
+    return {"models": models}
+
+
+# ============== OpenRouter API Endpoints ==============
+
+@app.get("/api/openrouter/status", response_model=OpenRouterStatus)
+async def get_openrouter_status():
+    """Get OpenRouter service status."""
+    status = await llm_service.check_openrouter_status()
+    return status
+
+
+@app.get("/api/openrouter/models")
+async def get_openrouter_models():
+    """Get available OpenRouter models."""
+    models = await llm_service.list_models("openrouter")
     return {"models": models}
 
 
