@@ -17,7 +17,14 @@ class QueueManager:
         self.max_workers = max_workers
         self.websocket_manager = WebSocketManager()
 
-    async def add_job(self, filename: str, file_size: int, video_path: str) -> Job:
+    async def add_job(
+        self,
+        filename: str,
+        file_size: int,
+        video_path: str,
+        target_language: Optional[str] = None,
+        llm_model: Optional[str] = None
+    ) -> Job:
         """Add a new job to the queue."""
         job_id = str(uuid4())
         job = Job(
@@ -32,13 +39,19 @@ class QueueManager:
             error_message=None,
             video_path=video_path,
             audio_path=None,
-            transcript_path=None
+            transcript_path=None,
+            transcript_raw_path=None,
+            target_language=target_language,
+            llm_model=llm_model,
+            llm_model_used=None,
+            llm_processing_skipped=False,
+            detected_language=None
         )
 
         self.jobs[job_id] = job
         await self.job_queue.put(job_id)
         await self.broadcast_update(job)
-        print(f"Job {job_id} added to queue: {filename}")
+        print(f"Job {job_id} added to queue: {filename} (target_language={target_language}, llm_model={llm_model})")
         return job
 
     async def update_job_progress(

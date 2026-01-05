@@ -1,18 +1,19 @@
 """FastAPI main application."""
 
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
 import shutil
 import asyncio
 import logging
-from typing import List
+from typing import List, Optional
 from contextlib import asynccontextmanager
 
 from .core.queue_manager import QueueManager
 from .core.worker import Worker
-from .models import Job
+from .core.ollama_service import ollama_service
+from .models import Job, OllamaConfig, OllamaStatus, SupportedLanguage, SUPPORTED_LANGUAGES
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -78,8 +79,13 @@ async def root():
             "jobs": "GET /api/jobs",
             "job": "GET /api/jobs/{job_id}",
             "download": "GET /api/download/{job_id}",
+            "download_raw": "GET /api/download/{job_id}/raw",
             "websocket": "WS /ws",
-            "status": "GET /api/status"
+            "status": "GET /api/status",
+            "ollama_config": "GET/PUT /api/config/ollama",
+            "ollama_status": "GET /api/ollama/status",
+            "ollama_models": "GET /api/ollama/models",
+            "languages": "GET /api/languages"
         }
     }
 
@@ -109,7 +115,11 @@ async def get_status():
 
 
 @app.post("/api/upload", response_model=Job)
-async def upload_video(file: UploadFile = File(...)):
+async def upload_video(
+    file: UploadFile = File(...),
+    target_language: Optional[str] = Form(None),
+    llm_model: Optional[str] = Form(None)
+):
     """Upload video file and add to processing queue."""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -123,6 +133,15 @@ async def upload_video(file: UploadFile = File(...)):
             detail=f"Unsupported file format. Allowed: {', '.join(allowed_extensions)}"
         )
 
+    # Validate target_language if provided
+    if target_language:
+        valid_codes = [lang.code for lang in SUPPORTED_LANGUAGES]
+        if target_language not in valid_codes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported language. Allowed: {', '.join(valid_codes)}"
+            )
+
     # Save uploaded file
     video_path = Path("storage/uploads") / file.filename
     try:
@@ -131,11 +150,13 @@ async def upload_video(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
 
-    # Add to queue
+    # Add to queue with language and model info
     job = await queue_manager.add_job(
         filename=file.filename,
         file_size=video_path.stat().st_size,
-        video_path=str(video_path)
+        video_path=str(video_path),
+        target_language=target_language,
+        llm_model=llm_model
     )
 
     return job
@@ -171,6 +192,64 @@ async def download_transcript(job_id: str):
         media_type="text/plain",
         filename=f"{Path(job.filename).stem}_transcript.txt"
     )
+
+
+@app.get("/api/download/{job_id}/raw")
+async def download_raw_transcript(job_id: str):
+    """Download raw (unformatted) transcript file."""
+    job = queue_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if not job.transcript_raw_path or not Path(job.transcript_raw_path).exists():
+        raise HTTPException(status_code=404, detail="Raw transcript not found")
+
+    return FileResponse(
+        job.transcript_raw_path,
+        media_type="text/plain",
+        filename=f"{Path(job.filename).stem}_raw_transcript.txt"
+    )
+
+
+# ============== Ollama API Endpoints ==============
+
+@app.get("/api/config/ollama")
+async def get_ollama_config():
+    """Get Ollama configuration."""
+    return ollama_service.get_config()
+
+
+@app.put("/api/config/ollama")
+async def update_ollama_config(config: OllamaConfig):
+    """Update Ollama configuration."""
+    updated_config = ollama_service.update_config(config.model_dump())
+    return {"message": "Configuration updated", "config": updated_config}
+
+
+@app.get("/api/ollama/status", response_model=OllamaStatus)
+async def get_ollama_status():
+    """Get Ollama service status."""
+    status = await ollama_service.check_status()
+    return status
+
+
+@app.get("/api/ollama/models")
+async def get_ollama_models():
+    """Get available Ollama models."""
+    status = await ollama_service.check_status()
+    if not status["available"]:
+        raise HTTPException(
+            status_code=503,
+            detail=status.get("error", "Ollama service not available")
+        )
+    models = await ollama_service.list_models()
+    return {"models": models}
+
+
+@app.get("/api/languages", response_model=List[SupportedLanguage])
+async def get_supported_languages():
+    """Get list of supported languages."""
+    return SUPPORTED_LANGUAGES
 
 
 @app.websocket("/ws")
