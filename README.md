@@ -43,6 +43,11 @@
 - ✅ 队列处理多个视频
 - ✅ 一键下载转录文本
 - ✅ GPU 加速支持
+- ✅ **LLM 智能文本处理**（NEW）
+  - 支持 Ollama（本地）和 OpenRouter（云端 API）
+  - 自动标点符号添加和段落分段
+  - 多语言翻译支持（13+ 语言）
+  - 可配置的 LLM 提供商切换
 
 ## 技术栈
 
@@ -51,6 +56,7 @@
 - **实时通信**: WebSocket
 - **AI 模型**: Whisper-large-v3
 - **音频处理**: FFmpeg
+- **LLM 支持**: Ollama / OpenRouter (GPT-4o, Claude, Gemini, Qwen 等)
 
 ## 项目结构
 
@@ -68,6 +74,31 @@ Whisper/
 - 前端界面: http://localhost:3000
 - 后端 API: http://localhost:8000
 - API 文档: http://localhost:8000/docs
+
+## LLM 配置
+
+转录完成后，可使用 LLM 对文本进行智能格式化和翻译处理。
+
+### 方式一：Ollama（本地，免费）
+
+1. 安装 Ollama: https://ollama.ai
+2. 下载推荐模型：
+   ```bash
+   ollama pull qwen2.5:7b    # 中文推荐
+   ollama pull llama3        # 英文推荐
+   ```
+3. 在前端"LLM 设置"中配置 Ollama
+
+### 方式二：OpenRouter（云端 API）
+
+1. 注册 OpenRouter: https://openrouter.ai
+2. 获取 API Key
+3. 在前端"LLM 设置"中配置 OpenRouter API Key
+4. 选择模型（推荐：gpt-4o-mini、claude-3-haiku）
+
+### 支持的翻译语言
+
+中文、英文、日语、韩语、法语、德语、西班牙语、俄语、葡萄牙语、意大利语、阿拉伯语、泰语、越南语
 
 ---
 

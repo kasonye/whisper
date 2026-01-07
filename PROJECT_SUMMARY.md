@@ -14,6 +14,8 @@
 - ✅ `backend/app/core/worker.py` - 后台工作进程
 - ✅ `backend/app/core/ffmpeg_processor.py` - FFmpeg 音频提取（带进度跟踪）
 - ✅ `backend/app/core/whisper_wrapper.py` - Whisper 转录包装器（带进度跟踪）
+- ✅ `backend/app/core/llm_service.py` - 统一 LLM 服务（Ollama + OpenRouter）
+- ✅ `backend/app/core/text_formatter.py` - 文本格式化处理
 
 #### 3. 工具类
 - ✅ `backend/app/utils/websocket_manager.py` - WebSocket 连接管理
@@ -24,6 +26,13 @@
 - ✅ `GET /api/jobs/{job_id}` - 获取特定任务
 - ✅ `GET /api/download/{job_id}` - 下载转录文本
 - ✅ `WebSocket /ws` - 实时进度更新
+- ✅ `GET /api/config/llm` - 获取 LLM 配置
+- ✅ `PUT /api/config/llm` - 更新 LLM 配置
+- ✅ `GET /api/llm/status` - 获取 LLM 服务状态
+- ✅ `GET /api/ollama/status` - 获取 Ollama 状态
+- ✅ `GET /api/ollama/models` - 获取 Ollama 可用模型
+- ✅ `GET /api/openrouter/status` - 获取 OpenRouter 状态
+- ✅ `GET /api/openrouter/models` - 获取 OpenRouter 可用模型
 
 ### 前端实现 (React + TypeScript)
 
@@ -32,9 +41,13 @@
 - ✅ `frontend/src/components/VideoUpload.tsx` - 视频上传组件（拖拽支持）
 - ✅ `frontend/src/components/JobCard.tsx` - 任务卡片组件
 - ✅ `frontend/src/components/JobQueue.tsx` - 任务队列组件
+- ✅ `frontend/src/components/LLMSettings.tsx` - LLM 设置组件
+- ✅ `frontend/src/components/OllamaSettings.tsx` - Ollama 设置组件
 
 #### 2. 自定义 Hooks
 - ✅ `frontend/src/hooks/useWebSocket.ts` - WebSocket 连接 Hook（自动重连）
+- ✅ `frontend/src/hooks/useLLMConfig.ts` - LLM 配置管理 Hook
+- ✅ `frontend/src/hooks/useOllamaConfig.ts` - Ollama 配置管理 Hook
 
 #### 3. 类型定义
 - ✅ `frontend/src/types/index.ts` - TypeScript 类型定义
@@ -76,10 +89,18 @@
 ### 5. 队列管理
 - 异步任务队列（asyncio.Queue）
 - 可配置的并发 Worker 数量（默认 2）
-- 任务状态管理（QUEUED, EXTRACTING_AUDIO, TRANSCRIBING, COMPLETED, FAILED）
+- 任务状态管理（QUEUED, EXTRACTING_AUDIO, TRANSCRIBING, FORMATTING_LLM, COMPLETED, FAILED）
 - 内存中的任务存储
 
-### 6. 用户界面
+### 6. LLM 智能处理（NEW）
+- 多提供商支持（Ollama 本地 + OpenRouter 云端）
+- 自动文本格式化（标点符号、段落分段）
+- 多语言翻译（13+ 语言支持）
+- 语言自动检测
+- 可配置的模型选择
+- 配置持久化存储
+
+### 7. 用户界面
 - 现代化的 Ant Design UI
 - 实时进度条
 - 任务筛选（全部/处理中/已完成/失败）
@@ -114,9 +135,11 @@ FastAPI 接收并保存
     ↓
 Worker 从队列获取任务
     ↓
-阶段 1: FFmpeg 提取音频 (0-50%)
+阶段 1: FFmpeg 提取音频 (0-40%)
     ↓ (实时进度通过 WebSocket 推送)
-阶段 2: Whisper 转录 (50-100%)
+阶段 2: Whisper 转录 (40-80%)
+    ↓ (实时进度通过 WebSocket 推送)
+阶段 3: LLM 格式化/翻译 (80-100%)
     ↓ (实时进度通过 WebSocket 推送)
 保存转录文本
     ↓
@@ -126,7 +149,8 @@ Worker 从队列获取任务
 ### 进度计算
 - **FFmpeg**: `progress = (current_time / total_duration) * 100`
 - **Whisper**: `progress = 5 + (segments_processed / estimated_segments) * 95`
-- **总体**: FFmpeg 占 0-50%，Whisper 占 50-100%
+- **LLM**: 格式化/翻译处理进度
+- **总体**: FFmpeg 占 0-40%，Whisper 占 40-80%，LLM 占 80-100%
 
 ## 使用流程
 
@@ -258,5 +282,7 @@ npm start
 - ✅ 清晰的代码结构
 - ✅ 完善的文档
 - ✅ 易于部署和使用
+- ✅ LLM 智能文本处理（多提供商支持）
+- ✅ 多语言翻译支持
 
 项目已准备好进行测试和部署！

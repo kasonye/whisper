@@ -1,5 +1,64 @@
 # 更新日志
 
+## 2025-01-07 - v1.1.0 LLM 智能处理功能
+
+### 新增功能
+
+#### 多 LLM 提供商支持
+- ✅ **Ollama 集成** - 支持本地运行的 Ollama 服务
+  - 自动检测服务状态和可用模型
+  - 推荐模型：qwen2.5:7b（中文）、llama3（英文）
+  - 可配置服务器 URL 和超时时间
+
+- ✅ **OpenRouter 集成** - 支持云端 API 调用
+  - 支持 GPT-4o、Claude、Gemini、Qwen 等多个模型
+  - API Key 安全存储
+  - 自动获取可用模型列表
+
+#### 智能文本处理
+- ✅ **自动格式化** - 转录完成后自动添加标点符号和段落分段
+- ✅ **多语言翻译** - 支持 13+ 语言的实时翻译
+  - 中文、英文、日语、韩语、法语、德语、西班牙语
+  - 俄语、葡萄牙语、意大利语、阿拉伯语、泰语、越南语
+- ✅ **语言检测** - 自动识别转录文本语言
+
+### 新增文件
+
+#### 后端
+- ✅ `backend/app/core/llm_service.py` - 统一 LLM 服务（支持多提供商）
+
+#### 前端
+- ✅ `frontend/src/components/LLMSettings.tsx` - LLM 设置组件
+- ✅ `frontend/src/components/OllamaSettings.tsx` - Ollama 设置组件
+- ✅ `frontend/src/hooks/useLLMConfig.ts` - LLM 配置 Hook
+- ✅ `frontend/src/hooks/useOllamaConfig.ts` - Ollama 配置 Hook
+
+### 修改的文件
+- ✅ `frontend/src/App.tsx` - 集成 LLM 设置界面
+- ✅ `frontend/src/components/VideoUpload.tsx` - 添加语言和模型选择
+- ✅ `frontend/src/components/JobCard.tsx` - 显示 LLM 处理状态
+- ✅ `frontend/src/types/index.ts` - 新增 LLM 相关类型定义
+
+### 新增 API 端点
+- ✅ `GET /api/config/llm` - 获取 LLM 配置
+- ✅ `PUT /api/config/llm` - 更新 LLM 配置
+- ✅ `GET /api/llm/status` - 获取 LLM 服务状态
+- ✅ `GET /api/ollama/status` - 获取 Ollama 状态
+- ✅ `GET /api/ollama/models` - 获取 Ollama 可用模型
+- ✅ `GET /api/openrouter/status` - 获取 OpenRouter 状态
+- ✅ `GET /api/openrouter/models` - 获取 OpenRouter 可用模型
+
+### 工作流程更新
+```
+视频上传 → 音频提取 → Whisper 转录 → LLM 格式化/翻译 → 下载结果
+```
+
+### 配置存储
+- LLM 配置保存在 `storage/config/llm.json`
+- 支持从旧版 `ollama.json` 自动迁移
+
+---
+
 ## 2025-12-28 - 文档更新和 Windows 支持改进
 
 ### 新增文档
@@ -151,6 +210,13 @@ MIT License
 ---
 
 ## 版本历史
+
+### v1.1.0 (2025-01-07)
+- 新增多 LLM 提供商支持（Ollama + OpenRouter）
+- 新增智能文本格式化功能
+- 新增多语言翻译支持（13+ 语言）
+- 新增语言自动检测
+- 新增 LLM 设置界面
 
 ### v1.0.0 (2025-12-28)
 - 初始版本发布
