@@ -441,17 +441,26 @@ class LLMService:
         if progress_callback:
             await progress_callback(0, "Preparing to format transcript...")
 
-        prompt = f"""/no_think
-任务：给语音转录添加标点符号（逗号、句号、问号）和分段。
-规则：
-- 保留原文每一个字，不得删减或改写
-- 不加标题、emoji、总结、解释
-- 直接输出处理后的文本
+        prompt = f"""你是一个专业的文字整理助手。请对以下语音转录文本进行格式化处理。
 
-原文：
+## 任务要求
+
+对语音转录内容添加适当的标点符号和段落分隔，使其更易阅读。
+
+## 处理规则
+
+1. **保持原文完整**：保留每一个字词，不删减、不改写、不添加内容
+2. **添加标点符号**：根据语义和停顿添加逗号、句号、问号、感叹号等
+3. **合理分段**：根据话题或语义变化进行段落划分
+4. **输出要求**：直接输出处理后的文本，不要添加标题、说明、总结或任何额外内容
+
+## 原文内容
+
 {text}
 
-处理后："""
+## 处理结果
+
+"""
 
         if progress_callback:
             await progress_callback(30, "Sending to LLM for formatting...")
@@ -480,17 +489,27 @@ class LLMService:
 
         target_lang_name = LANGUAGE_NAMES.get(target_language, target_language)
 
-        prompt = f"""/no_think
-任务：将语音转录翻译成{target_lang_name}，添加标点符号和分段。
-规则：
-- 翻译原文全部内容，不得遗漏
-- 不加标题、emoji、总结、解释
-- 直接输出翻译后的文本
+        prompt = f"""你是一个专业的翻译和文字整理助手。请将以下语音转录文本翻译成{target_lang_name}，并进行格式化处理。
 
-原文：
+## 任务要求
+
+将原文翻译成{target_lang_name}，同时添加适当的标点符号和段落分隔。
+
+## 处理规则
+
+1. **完整翻译**：翻译全部内容，不得遗漏任何部分
+2. **准确传达**：保持原文的语义和语气
+3. **添加标点**：根据目标语言习惯添加适当的标点符号
+4. **合理分段**：根据内容逻辑进行段落划分
+5. **输出要求**：直接输出翻译后的文本，不要添加标题、说明、总结或任何额外内容
+
+## 原文内容
+
 {text}
 
-翻译："""
+## 翻译结果
+
+"""
 
         if progress_callback:
             await progress_callback(30, f"Translating to {target_lang_name}...")
@@ -510,10 +529,14 @@ class LLMService:
 
         sample = text[:500] if len(text) > 500 else text
 
-        prompt = f"""/no_think
-识别语言，只回复语言代码(zh/en/ja/ko/fr/de/es/ru/pt/it/ar/th/vi)：
+        prompt = f"""请识别以下文本的语言，只需回复对应的语言代码。
 
-{sample}"""
+可选的语言代码：zh（中文）、en（英文）、ja（日语）、ko（韩语）、fr（法语）、de（德语）、es（西班牙语）、ru（俄语）、pt（葡萄牙语）、it（意大利语）、ar（阿拉伯语）、th（泰语）、vi（越南语）
+
+文本内容：
+{sample}
+
+语言代码："""
 
         result = await self.generate(prompt, model)
         if result:
